@@ -1,0 +1,120 @@
+name: Bump casks
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # daily at 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bump:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@main
+
+      - name: Configure git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump outdated casks
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_BUMP_TOKEN }}
+        run: |
+          set -uo pipefail
+
+          TAP="zaratan/bat-tools"
+          REPO="zaratan/homebrew-bat-tools"
+          TAP_DIR="$(brew --repository)/Library/Taps/${TAP%%/*}/homebrew-${TAP#*/}"
+
+          cd "$TAP_DIR"
+
+          # Use PAT for git push (gh CLI uses GH_TOKEN env var directly)
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+
+          outdated=$(brew livecheck --tap "$TAP" --cask --newer-only --json)
+          echo "Livecheck output: $outdated"
+
+          echo "$outdated" | jq -r '.[] | [.cask, .version.current, .version.latest] | @tsv' | \
+          while IFS=$'\t' read -r cask current latest; do
+            echo "::group::Bumping $cask: $current -> $latest"
+
+            cask_file="Casks/${cask}.rb"
+
+            # Skip if a PR for this exact bump already exists (any state)
+            existing=$(gh pr list --repo "$REPO" --state all \
+              --search "\"${cask} ${latest}\" in:title" --json number --jq 'length')
+            if [ "$existing" != "0" ]; then
+              echo "PR for ${cask} ${latest} already exists, skipping."
+              echo "::endgroup::"
+              continue
+            fi
+
+            # Extract arch mapping: arch arm: "X", intel: "Y"
+            arch_line=$(grep -E '^\s*arch\s+arm:' "$cask_file" | head -1)
+            arch_arm=$(echo "$arch_line" | sed -E 's/.*arm:[[:space:]]*"([^"]+)".*/\1/')
+            arch_intel=$(echo "$arch_line" | sed -E 's/.*intel:[[:space:]]*"([^"]+)".*/\1/')
+
+            # Extract the main url pattern (skip the one nested inside `livecheck do`)
+            url_pattern=$(awk '
+              /livecheck do/ { in_lc=1 }
+              /^[[:space:]]*end[[:space:]]*$/ && in_lc { in_lc=0; next }
+              !in_lc && /^[[:space:]]*url[[:space:]]+"/ {
+                match($0, /"[^"]+"/)
+                print substr($0, RSTART+1, RLENGTH-2)
+                exit
+              }
+            ' "$cask_file")
+
+            # Build the two real URLs by interpolating #{version} and #{arch}
+            url_arm="${url_pattern//\#\{version\}/$latest}"
+            url_arm="${url_arm//\#\{arch\}/$arch_arm}"
+            url_intel="${url_pattern//\#\{version\}/$latest}"
+            url_intel="${url_intel//\#\{arch\}/$arch_intel}"
+
+            echo "ARM   URL: $url_arm"
+            echo "Intel URL: $url_intel"
+
+            # Download streaming and compute SHA256 (no need to keep the file)
+            sha_arm=$(curl -sSfL "$url_arm" | shasum -a 256 | awk '{print $1}')
+            sha_intel=$(curl -sSfL "$url_intel" | shasum -a 256 | awk '{print $1}')
+            if [ -z "$sha_arm" ] || [ -z "$sha_intel" ]; then
+              echo "ERROR: failed to compute sha256, skipping."
+              echo "::endgroup::"
+              continue
+            fi
+            echo "ARM   SHA: $sha_arm"
+            echo "Intel SHA: $sha_intel"
+
+            # Edit the cask file: version + both sha256 (range-restricted to the sha256 stanza)
+            sed -i.bak -E "s/^([[:space:]]*version[[:space:]]+)\"${current}\"/\1\"${latest}\"/" "$cask_file"
+            sed -i.bak -E "/sha256/,/^$/ s/(arm:[[:space:]]+)\"[a-f0-9]{64}\"/\1\"${sha_arm}\"/" "$cask_file"
+            sed -i.bak -E "/sha256/,/^$/ s/(intel:[[:space:]]+)\"[a-f0-9]{64}\"/\1\"${sha_intel}\"/" "$cask_file"
+            rm -f "${cask_file}.bak"
+
+            if git diff --quiet -- "$cask_file"; then
+              echo "ERROR: no changes after edit, skipping."
+              echo "::endgroup::"
+              continue
+            fi
+
+            branch="bump-${cask}-${latest}"
+            git checkout -b "$branch"
+            git add "$cask_file"
+            git commit -m "${cask} ${latest}"
+            git push -u origin "$branch"
+
+            gh pr create \
+              --repo "$REPO" \
+              --base main \
+              --head "$branch" \
+              --title "${cask} ${latest}" \
+              --body "Automated bump of \`${cask}\` from \`${current}\` to \`${latest}\`."
+
+            git checkout main
+            echo "::endgroup::"
+          done
