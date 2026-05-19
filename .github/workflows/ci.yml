@@ -22,5 +22,8 @@ jobs:
       - name: brew style
         run: brew style zaratan/bat-tools
 
-      - name: brew audit
+      - name: brew audit (formulae)
+        run: brew audit --formula --strict --tap zaratan/bat-tools
+
+      - name: brew audit (casks)
         run: brew audit --cask --tap zaratan/bat-tools
