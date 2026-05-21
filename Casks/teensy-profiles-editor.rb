@@ -1,9 +1,9 @@
 cask "teensy-profiles-editor" do
   arch arm: "arm64", intel: "x86_64"
 
-  version "0.6.1"
-  sha256 arm:   "170a84b9bb2f336591ffc028c319c7ff27d8838509a8f57a89d43642a00b4601",
-         intel: "c6aeb6602185ee7ee1fed06c6ca4726f68c8b0bcfe0dec5756ca376bb231e6d7"
+  version "0.7.0"
+  sha256 arm:   "482c4e09dd91b54f4d379e0c666069c300d468dec1d5fe8cfd7334c6e83e471b",
+         intel: "f6eafb0901563685e09647ff582dbf0c3047d3b0b87cd12e9511a45c8918efee"
 
   # Fork: upstream a-langlais/TeensyRecorders_ProfilesEditor publishes no releases;
   # signed/notarized macOS builds live on this fork.
