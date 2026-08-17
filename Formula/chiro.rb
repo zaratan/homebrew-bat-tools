@@ -1,7 +1,7 @@
 class Chiro < Formula
   desc "Interactive TUI to prepare .wav recordings in Vigie-Chiro format"
   homepage "https://github.com/zaratan/chiro-tools"
-  version "0.1.13"
+  version "0.1.14"
   license "MIT"
 
   livecheck do
@@ -15,7 +15,7 @@ class Chiro < Formula
   on_macos do
     on_arm do
       url "https://github.com/zaratan/chiro-tools/releases/download/v#{version}/chiro-darwin-arm64.tar.gz"
-      sha256 "b9c5d48ab677d22370fc7ed7ee8925f3e1aa538f1b311a38d23c05ee981e3cda"
+      sha256 "33849bc33460a0a765c98601ac775f7904ba86a62aeaaac4aff645b490607176"
     end
   end
 
