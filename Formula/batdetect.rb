@@ -1,7 +1,7 @@
 class Batdetect < Formula
   desc "Detect and track bats in thermal binocular videos"
   homepage "https://github.com/zaratan/chiro-dvr"
-  version "0.1.0"
+  version "0.1.1"
   license "GPL-3.0-or-later"
 
   livecheck do
@@ -16,7 +16,7 @@ class Batdetect < Formula
   on_macos do
     on_arm do
       url "https://github.com/zaratan/chiro-dvr/releases/download/v#{version}/batdetect-darwin-arm64.tar.gz"
-      sha256 "0c12b7aab3a092885197117e5fc65e034062ece28d69c767770311d36f5f8062"
+      sha256 "4cdd96667a2fabf456e98c6ce3ce79d2d4a2872f376dd80cceeaf1f662f9f9ea"
     end
   end
 
