@@ -13,6 +13,7 @@ Then install one of the casks or formulae:
 ```sh
 brew install teensy-profiles-editor
 brew install chiro
+brew install batdetect
 ```
 
 ## Available casks
@@ -23,9 +24,10 @@ brew install chiro
 
 ## Available formulae
 
-| Formula | Description                                              | Upstream                                                  |
-| ------- | -------------------------------------------------------- | --------------------------------------------------------- |
-| `chiro` | Interactive TUI to prepare .wav recordings (Vigie-Chiro) | [zaratan/chiro-tools](https://github.com/zaratan/chiro-tools) |
+| Formula     | Description                                              | Upstream                                                      |
+| ----------- | -------------------------------------------------------- | ------------------------------------------------------------- |
+| `batdetect` | Detect and track bats in thermal binocular videos        | [zaratan/chiro-dvr](https://github.com/zaratan/chiro-dvr)     |
+| `chiro`     | Interactive TUI to prepare .wav recordings (Vigie-Chiro) | [zaratan/chiro-tools](https://github.com/zaratan/chiro-tools) |
 
 ## Updating versions
 
